@@ -4,51 +4,44 @@ using TodoApi.Entities;
 
 namespace TodoApi.Repositories
 {
-    public class TodoRepository : ITodoRepository
+    public class TasksRepository : ITaskRepository
     {
         private readonly TodoDbContext _context;
 
-        public TodoRepository(TodoDbContext context)
+        public TasksRepository(TodoDbContext context)
         {
             _context = context;
         }
 
-        public async Task<IEnumerable<TodoItem>> GetAllAsync()
+        public async Task<IEnumerable<TaskItem>> GetAllAsync()
         {
-            return await _context.TodoItems.OrderByDescending(x => x.CreatedAt).ToListAsync();
+            return await _context.Tasks.OrderByDescending(x => x.CreatedAt).ToListAsync();
         }
 
-        public async Task<TodoItem?> GetByIdAsync(int id)
+        public async Task<TaskItem?> GetByIdAsync(int id)
         {
-            return await _context.TodoItems.FindAsync(id);
+            return await _context.Tasks.FindAsync(id);
         }
 
-        public async Task<IEnumerable<TodoItem>> GetByCompletionStatusAsync(bool isCompleted)
+        public async Task<IEnumerable<TaskItem>> GetByCompletionStatusAsync()
         {
-            return await _context.TodoItems
-                .Where(x => x.IsCompleted == isCompleted)
+            return await _context.Tasks
+                .Where(x => x.IsCompleted == true)
                 .OrderByDescending(x => x.CreatedAt)
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<TodoItem>> GetByCategoryAsync(string category)
+        public async Task AddAsync(TaskItem item)
         {
-            return await _context.TodoItems
-                .Where(x => x.Category == category)
-                .OrderByDescending(x => x.CreatedAt)
-                .ToListAsync();
-        }
-
-        public async Task AddAsync(TodoItem item)
-        {
-            await _context.TodoItems.AddAsync(item);
+            await _context.Tasks.AddAsync(item);
             await SaveAsync();
         }
 
-        public async Task UpdateAsync(TodoItem item)
+        public async Task CompleteTaskAsync(TaskItem item)
         {
-            item.UpdatedAt = DateTime.UtcNow;
-            _context.TodoItems.Update(item);
+            item.IsCompleted = true;
+            item.CompletedAt = DateTime.UtcNow;
+            _context.Tasks.Update(item);
             await SaveAsync();
         }
 
@@ -57,7 +50,7 @@ namespace TodoApi.Repositories
             var item = await GetByIdAsync(id);
             if (item != null)
             {
-                _context.TodoItems.Remove(item);
+                _context.Tasks.Remove(item);
                 await SaveAsync();
             }
         }
