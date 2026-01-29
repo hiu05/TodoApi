@@ -29,11 +29,9 @@ namespace TodoApi.Services
             }
         }
 
-        public async Task<IEnumerable<TaskItemDto>> GetAllAsync()
+        public async Task<PagedTaskItemDto> GetAllAsync(int pageNumber, int limit)
         {
-            _logger.LogInformation("Fetching tasks for UserId: {UserId}", _userId);
-            var items = await _repository.GetAllAsync(_userId);
-            return items.Select(MapToDto);
+            return await _repository.GetAllAsync(_userId, pageNumber, limit);
         }
 
         public async Task<TaskItemDto?> GetByIdAsync(int id)
@@ -92,10 +90,6 @@ namespace TodoApi.Services
         {
             var items = await _repository.SearchAsync(searchTerm, userId: _userId);
             return items.Select(MapToDto);
-        }
-        public async Task<PagedTaskItemDto> GetPagedAsync(int pageNumber, int limit)
-        {
-            return await _repository.GetPagedAsync(_userId, pageNumber, limit);
         }
         private static TaskItemDto MapToDto(TaskItem item)
         {

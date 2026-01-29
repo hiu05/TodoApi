@@ -20,17 +20,21 @@ namespace TodoApi.Controllers
             _logger = logger;
         }
 
-        [HttpGet]
-        public async Task<ActionResult<ApiResponse<IEnumerable<TaskItemDto>>>> GetAllTasks()
+        [HttpPost("get-list")]
+        public async Task<ActionResult<ApiResponse<PagedTaskItemDto>>> GetAllTasks([FromBody] PagedRequestDto dto)
         {
             try
             {
-                var tasks = await _taskService.GetAllAsync();
-                return Ok(ApiResponse<IEnumerable<TaskItemDto>>.SuccessResponse(tasks, "User tasks retrieved successfully"));
+                if (dto.PageNumber <= 0 || dto.Limit <= 0)
+                {
+                    return BadRequest(ApiResponse.ErrorResponse("PageNumber and Limit must be greater than zero"));
+                }
+                var pagedTasks = await _taskService.GetAllAsync(dto.PageNumber, dto.Limit);
+                return Ok(ApiResponse<PagedTaskItemDto>.SuccessResponse(pagedTasks, "Paged tasks retrieved successfully"));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting user tasks");
+                _logger.LogError(ex, "Error getting paged tasks");
                 return StatusCode(500, ApiResponse.ErrorResponse("Internal server error"));
             }
         }
@@ -159,24 +163,6 @@ namespace TodoApi.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error searching tasks");
-                return StatusCode(500, ApiResponse.ErrorResponse("Internal server error"));
-            }
-        }
-        [HttpPost("get-paged")]
-        public async Task<ActionResult<ApiResponse<PagedTaskItemDto>>> GetPagedTasks([FromBody] PagedRequestDto dto)
-        {
-            try
-            {
-                if (dto.PageNumber <= 0 || dto.Limit <= 0)
-                {
-                    return BadRequest(ApiResponse.ErrorResponse("PageNumber and Limit must be greater than zero"));
-                }
-                var pagedTasks = await _taskService.GetPagedAsync(dto.PageNumber, dto.Limit);
-                return Ok(ApiResponse<PagedTaskItemDto>.SuccessResponse(pagedTasks, "Paged tasks retrieved successfully"));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting paged tasks");
                 return StatusCode(500, ApiResponse.ErrorResponse("Internal server error"));
             }
         }

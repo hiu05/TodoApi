@@ -14,8 +14,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddHttpContextAccessor();
 
-// Add DbContext with InMemory database
+// Add DbContext with mySQL database
 builder.Services.AddDbContext<TodoDbContext>(options =>
     options.UseMySql(
         builder.Configuration.GetConnectionString("DefaultConnection"),
@@ -49,7 +50,6 @@ builder.Services.AddAuthentication(options =>
 });
 
 // Add Dependency Injection
-builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ITaskRepository, TaskRepository>();
 builder.Services.AddScoped<ITaskService, TaskService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
