@@ -1,5 +1,7 @@
+using Microsoft.AspNetCore.Http.HttpResults;
 using TodoApi.DTOs;
 using TodoApi.Entities;
+using TodoApi.Helpers;
 using TodoApi.Repositories;
 
 namespace TodoApi.Services
@@ -7,15 +9,35 @@ namespace TodoApi.Services
     public class TaskService : ITaskService
     {
         private readonly ITaskRepository _repository;
+        private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly ILogger<TaskService> _logger;
 
-        public TaskService(ITaskRepository repository)
+        public TaskService(ITaskRepository repository, IHttpContextAccessor httpContextAccessor, ILogger<TaskService> logger)
         {
             _repository = repository;
+            _httpContextAccessor = httpContextAccessor;
+            _logger = logger;
+        }
+        private int _userId
+        {
+            get
+            {
+                var claim = _httpContextAccessor.HttpContext?.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(claim))
+                    throw new UnauthorizedAccessException("UserId not found in token");
+                return int.Parse(claim);
+            }
         }
 
         public async Task<IEnumerable<TaskItemDto>> GetAllAsync()
         {
-            var items = await _repository.GetAllAsync();
+            // var userIdClaim = _httpContextAccessor.HttpContext?.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            // if (string.IsNullOrEmpty(userIdClaim))
+            //     throw new UnauthorizedAccessException("UserId not found in token");
+
+            // var userId = int.Parse(userIdClaim);
+            _logger.LogInformation("Fetching tasks for UserId: {UserId}", _userId);
+            var items = await _repository.GetAllAsync(_userId);
             return items.Select(MapToDto);
         }
 
@@ -25,24 +47,15 @@ namespace TodoApi.Services
             return item == null ? null : MapToDto(item);
         }
 
-        public async Task<IEnumerable<TaskItemDto>> GetCompletedAsync()
-        {
-            var items = await _repository.GetByCompletionStatusAsync();
-            return items.Select(MapToDto);
-        }
-
         public async Task<TaskItemDto> CreateAsync(CreateTaskDto dto)
         {
-            if (string.IsNullOrWhiteSpace(dto.Title))
-                throw new ArgumentException("Title is required");
-
             var item = new TaskItem
             {
                 Title = dto.Title.Trim(),
                 Description = dto.Description?.Trim(),
                 IsCompleted = false,
                 CreatedAt = DateTime.UtcNow,
-                UserId = dto.UserId
+                UserId = _userId
             };
 
             await _repository.AddAsync(item);
@@ -88,7 +101,6 @@ namespace TodoApi.Services
                 IsCompleted = item.IsCompleted,
                 CreatedAt = item.CreatedAt,
                 CompletedAt = item.CompletedAt,
-
             };
         }
     }

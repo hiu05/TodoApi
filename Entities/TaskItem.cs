@@ -11,6 +11,6 @@ namespace TodoApi.Entities
 
         // Liên kết với User
         public int UserId { get; set; }
-        public User User { get; set; }
+        public User? User { get; set; }
     }
 }

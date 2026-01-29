@@ -8,6 +8,7 @@ namespace TodoApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    
     public class AuthController : ControllerBase
     {
         private readonly IAuthService _authService;
@@ -33,23 +34,23 @@ namespace TodoApi.Controllers
             }
         }
         [HttpPost("login")]
-        public async Task<ActionResult<ApiResponse<string>>> Login([FromBody] LoginDto dto)
+        public async Task<ActionResult<ApiResponse<LoginResponseDto>>> Login([FromBody] LoginDto dto)
         {
             try
             {
                 _logger.LogInformation("User login attempt: {Username}", dto.Username);
-                await _authService.LoginAsync(dto);
-                return Ok(ApiResponse<string>.SuccessResponse(null, "User logged in successfully"));
+                var response = await _authService.LoginAsync(dto);
+                return Ok(ApiResponse<LoginResponseDto>.SuccessResponse(response, "User logged in successfully"));
             }
             catch (UnauthorizedAccessException ex)
             {
                 _logger.LogWarning(ex, "Unauthorized login attempt for user: {Username}", dto.Username);
-                return Unauthorized(ApiResponse<string>.ErrorResponse("Invalid username or password"));
+                return Unauthorized(ApiResponse<LoginResponseDto>.ErrorResponse("Invalid username or password"));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error during login");
-                return StatusCode(500, ApiResponse<string>.ErrorResponse("Internal server error"));
+                return StatusCode(500, ApiResponse<LoginResponseDto>.ErrorResponse("Internal server error"));
             }
         }
     }

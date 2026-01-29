@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TodoApi.DTOs;
 using TodoApi.Helpers;
@@ -7,14 +8,15 @@ namespace TodoApi.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class taskController : ControllerBase
     {
-        private readonly ITaskService _todoService;
+        private readonly ITaskService _taskService;
         private readonly ILogger<taskController> _logger;
 
-        public taskController(ITaskService todoService, ILogger<taskController> logger)
+        public taskController(ITaskService taskService, ILogger<taskController> logger)
         {
-            _todoService = todoService;
+            _taskService = taskService;
             _logger = logger;
         }
 
@@ -26,12 +28,13 @@ namespace TodoApi.Controllers
         {
             try
             {
-                var todos = await _todoService.GetAllAsync();
-                return Ok(ApiResponse<IEnumerable<TaskItemDto>>.SuccessResponse(todos, "Todos retrieved successfully"));
+                var tasks = await _taskService.GetAllAsync();
+
+                return Ok(ApiResponse<IEnumerable<TaskItemDto>>.SuccessResponse(tasks, "User tasks retrieved successfully"));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting all todos");
+                _logger.LogError(ex, "Error getting user tasks");
                 return StatusCode(500, ApiResponse<IEnumerable<TaskItemDto>>.ErrorResponse("Internal server error"));
             }
         }
@@ -44,7 +47,7 @@ namespace TodoApi.Controllers
         {
             try
             {
-                var todo = await _todoService.GetByIdAsync(id);
+                var todo = await _taskService.GetByIdAsync(id);
                 if (todo == null)
                     return NotFound(ApiResponse<TaskItemDto>.ErrorResponse("Todo not found"));
 
@@ -54,24 +57,6 @@ namespace TodoApi.Controllers
             {
                 _logger.LogError(ex, "Error getting todo by id");
                 return StatusCode(500, ApiResponse<TaskItemDto>.ErrorResponse("Internal server error"));
-            }
-        }
-
-        /// <summary>
-        /// Get completed todos
-        /// </summary>
-        [HttpGet("status/completed")]
-        public async Task<ActionResult<ApiResponse<IEnumerable<TaskItemDto>>>> GetCompletedTodos()
-        {
-            try
-            {
-                var todos = await _todoService.GetCompletedAsync();
-                return Ok(ApiResponse<IEnumerable<TaskItemDto>>.SuccessResponse(todos, "Completed todos retrieved successfully"));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting completed todos");
-                return StatusCode(500, ApiResponse<IEnumerable<TaskItemDto>>.ErrorResponse("Internal server error"));
             }
         }
 
@@ -89,8 +74,8 @@ namespace TodoApi.Controllers
                 if (!ValidationHelper.IsValidDescription(dto.Description))
                     return BadRequest(ApiResponse<TaskItemDto>.ErrorResponse("Description must be less than 1000 characters"));
 
-                var todo = await _todoService.CreateAsync(dto);
-                return CreatedAtAction(nameof(GetTodoById), new { id = todo.Id }, 
+                var todo = await _taskService.CreateAsync(dto);
+                return CreatedAtAction(nameof(GetTodoById), new { id = todo.Id },
                     ApiResponse<TaskItemDto>.SuccessResponse(todo, "Todo created successfully"));
             }
             catch (ArgumentException ex)
@@ -119,7 +104,7 @@ namespace TodoApi.Controllers
                 if (dto.Description != null && !ValidationHelper.IsValidDescription(dto.Description))
                     return BadRequest(ApiResponse<TaskItemDto>.ErrorResponse("Description must be less than 1000 characters"));
 
-                var todo = await _todoService.CompleteTaskAsync(id, dto);
+                var todo = await _taskService.CompleteTaskAsync(id, dto);
                 if (todo == null)
                     return NotFound(ApiResponse<TaskItemDto>.ErrorResponse("Todo not found"));
 
@@ -140,7 +125,7 @@ namespace TodoApi.Controllers
         {
             try
             {
-                var result = await _todoService.DeleteAsync(id);
+                var result = await _taskService.DeleteAsync(id);
                 if (!result)
                     return NotFound(ApiResponse.ErrorResponse("Todo not found"));
 

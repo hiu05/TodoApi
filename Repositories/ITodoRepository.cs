@@ -4,9 +4,8 @@ namespace TodoApi.Repositories
 {
     public interface ITaskRepository
     {
-        Task<IEnumerable<TaskItem>> GetAllAsync();
+        Task<IEnumerable<TaskItem>> GetAllAsync(int userId);
         Task<TaskItem?> GetByIdAsync(int id);
-        Task<IEnumerable<TaskItem>> GetByCompletionStatusAsync();
         Task AddAsync(TaskItem item);
         Task CompleteTaskAsync(TaskItem item);
         Task DeleteAsync(int id);

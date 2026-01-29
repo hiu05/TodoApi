@@ -9,7 +9,6 @@ namespace TodoApi.Helpers
     public class JwtTokenHelper
     {
         private readonly IConfiguration _configuration;
-
         public JwtTokenHelper(IConfiguration configuration)
         {
             _configuration = configuration;

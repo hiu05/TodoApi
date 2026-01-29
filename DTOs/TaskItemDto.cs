@@ -8,5 +8,6 @@ namespace TodoApi.DTOs
         public bool IsCompleted { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? CompletedAt { get; set; }
+        public int UserId { get; set; }
     }
 }

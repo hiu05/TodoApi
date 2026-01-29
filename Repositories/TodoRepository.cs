@@ -1,34 +1,38 @@
 using Microsoft.EntityFrameworkCore;
 using TodoApi.Data;
+using TodoApi.DTOs;
 using TodoApi.Entities;
 
 namespace TodoApi.Repositories
 {
-    public class TasksRepository : ITaskRepository
+    public class TaskRepository : ITaskRepository
     {
         private readonly TodoDbContext _context;
 
-        public TasksRepository(TodoDbContext context)
+        public TaskRepository(TodoDbContext context)
         {
             _context = context;
         }
 
-        public async Task<IEnumerable<TaskItem>> GetAllAsync()
+        public async Task<IEnumerable<TaskItem>> GetAllAsync(int userId)
         {
-            return await _context.Tasks.OrderByDescending(x => x.CreatedAt).ToListAsync();
+            return await _context.Tasks
+            .Where(u => u.UserId == userId)
+            .Select(x => new TaskItem
+            {
+                Id = x.Id,
+                Title = x.Title,
+                IsCompleted = x.IsCompleted,
+                CreatedAt = x.CreatedAt,
+                CompletedAt = x.CompletedAt,
+                UserId = x.UserId
+            })
+            .OrderByDescending(x => x.CreatedAt).ToListAsync();
         }
 
         public async Task<TaskItem?> GetByIdAsync(int id)
         {
             return await _context.Tasks.FindAsync(id);
-        }
-
-        public async Task<IEnumerable<TaskItem>> GetByCompletionStatusAsync()
-        {
-            return await _context.Tasks
-                .Where(x => x.IsCompleted == true)
-                .OrderByDescending(x => x.CreatedAt)
-                .ToListAsync();
         }
 
         public async Task AddAsync(TaskItem item)

@@ -1,16 +1,19 @@
 using TodoApi.DTOs;
 using TodoApi.Entities;
 using TodoApi.Repositories;
+using TodoApi.Helpers;
 
 namespace TodoApi.Services
 {
     public class AuthService : IAuthService
     {
         private readonly IAuthRepository _authRepository;
+        private readonly JwtTokenHelper _jwtTokenHelper;
 
-        public AuthService(IAuthRepository authRepository)
+        public AuthService(IAuthRepository authRepository, JwtTokenHelper jwtTokenHelper)
         {
             _authRepository = authRepository;
+            _jwtTokenHelper = jwtTokenHelper;
         }
 
         public async Task RegisterAsync(RegisterDto dto)
@@ -19,6 +22,7 @@ namespace TodoApi.Services
             {
                 Username = dto.Username,
                 PasswordHash = HashPassword(dto.Password),
+                Email = dto.Email,
                 Role = "User",
                 Status = "Active",
             };
@@ -26,7 +30,7 @@ namespace TodoApi.Services
             await _authRepository.RegisterAsync(user);
         }
 
-        public async Task LoginAsync(LoginDto dto)
+        public async Task<LoginResponseDto> LoginAsync(LoginDto dto)
         {
             var user = new User
             {
@@ -39,6 +43,15 @@ namespace TodoApi.Services
             {
                 throw new UnauthorizedAccessException("Invalid username or password.");
             }
+
+            // Generate JWT token
+            var token = _jwtTokenHelper.GenerateToken(loggedInUser);
+            
+            return new LoginResponseDto
+            {
+                Token = token,
+                Expiration = DateTime.UtcNow.AddMinutes(60)
+            };
         }
 
         private string HashPassword(string password)
