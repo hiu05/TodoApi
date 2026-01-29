@@ -17,15 +17,6 @@ namespace TodoApi.Helpers
             };
         }
 
-        public static ApiResponse<T> ErrorResponse(string message, List<string>? errors = null)
-        {
-            return new ApiResponse<T>
-            {
-                Success = false,
-                Message = message,
-                Errors = errors ?? new()
-            };
-        }
 
         public static ApiResponse<T> FailureResponse(string message, T? data = default)
         {

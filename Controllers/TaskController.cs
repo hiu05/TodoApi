@@ -20,28 +20,21 @@ namespace TodoApi.Controllers
             _logger = logger;
         }
 
-        /// <summary>
-        /// Get all todos
-        /// </summary>
         [HttpGet]
-        public async Task<ActionResult<ApiResponse<IEnumerable<TaskItemDto>>>> GetAllTodos()
+        public async Task<ActionResult<ApiResponse<IEnumerable<TaskItemDto>>>> GetAllTasks()
         {
             try
             {
                 var tasks = await _taskService.GetAllAsync();
-
                 return Ok(ApiResponse<IEnumerable<TaskItemDto>>.SuccessResponse(tasks, "User tasks retrieved successfully"));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting user tasks");
-                return StatusCode(500, ApiResponse<IEnumerable<TaskItemDto>>.ErrorResponse("Internal server error"));
+                return StatusCode(500, ApiResponse.ErrorResponse("Internal server error"));
             }
         }
 
-        /// <summary>
-        /// Get todo by id
-        /// </summary>
         [HttpGet("{id}")]
         public async Task<ActionResult<ApiResponse<TaskItemDto>>> GetTodoById(int id)
         {
@@ -49,30 +42,52 @@ namespace TodoApi.Controllers
             {
                 var todo = await _taskService.GetByIdAsync(id);
                 if (todo == null)
-                    return NotFound(ApiResponse<TaskItemDto>.ErrorResponse("Todo not found"));
+                    return NotFound(ApiResponse.ErrorResponse("Todo not found"));
 
                 return Ok(ApiResponse<TaskItemDto>.SuccessResponse(todo, "Todo retrieved successfully"));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting todo by id");
-                return StatusCode(500, ApiResponse<TaskItemDto>.ErrorResponse("Internal server error"));
+                return StatusCode(500, ApiResponse.ErrorResponse("Internal server error"));
             }
         }
 
-        /// <summary>
-        /// Create a new todo
-        /// </summary>
+        [HttpPost("complete/{id}")]
+        public async Task<ActionResult<ApiResponse<TaskItemDto>>> CompleteTask(int id)
+        {
+            try
+            {
+                await _taskService.CompleteTaskAsync(id);
+                var task = await _taskService.GetByIdAsync(id);
+                if (task == null)
+                    return NotFound(ApiResponse.ErrorResponse("Todo not found"));
+
+                return CreatedAtAction(nameof(GetTodoById), new { id = task.Id },
+                    ApiResponse<TaskItemDto>.SuccessResponse(task, "Todo created successfully"));
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning(ex, "Validation error creating todo");
+                return BadRequest(ApiResponse.ErrorResponse(ex.Message));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating todo");
+                return StatusCode(500, ApiResponse.ErrorResponse("Internal server error"));
+            }
+        }
+
         [HttpPost]
         public async Task<ActionResult<ApiResponse<TaskItemDto>>> CreateTask([FromBody] CreateTaskDto dto)
         {
             try
             {
                 if (!ValidationHelper.IsValidTitle(dto.Title))
-                    return BadRequest(ApiResponse<TaskItemDto>.ErrorResponse("Title is required and must be less than 255 characters"));
+                    return BadRequest(ApiResponse.ErrorResponse("Title is required and must be less than 255 characters"));
 
                 if (!ValidationHelper.IsValidDescription(dto.Description))
-                    return BadRequest(ApiResponse<TaskItemDto>.ErrorResponse("Description must be less than 1000 characters"));
+                    return BadRequest(ApiResponse.ErrorResponse("Description must be less than 1000 characters"));
 
                 var todo = await _taskService.CreateAsync(dto);
                 return CreatedAtAction(nameof(GetTodoById), new { id = todo.Id },
@@ -81,45 +96,37 @@ namespace TodoApi.Controllers
             catch (ArgumentException ex)
             {
                 _logger.LogWarning(ex, "Validation error creating todo");
-                return BadRequest(ApiResponse<TaskItemDto>.ErrorResponse(ex.Message));
+                return BadRequest(ApiResponse.ErrorResponse(ex.Message));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error creating todo");
-                return StatusCode(500, ApiResponse<TaskItemDto>.ErrorResponse("Internal server error"));
+                return StatusCode(500, ApiResponse.ErrorResponse("Internal server error"));
             }
         }
 
-        /// <summary>
-        /// Update a todo
-        /// </summary>
-        [HttpPut("complete/{id}")]
-        public async Task<ActionResult<ApiResponse<TaskItemDto>>> UpdateTodo(int id, [FromBody] CompleteTaskDto dto)
+        [HttpPut("{id}")]
+        public async Task<ActionResult<ApiResponse<TaskItemDto>>> UpdateTodo(int id, [FromBody] CreateTaskDto dto)
         {
             try
             {
                 if (dto.Title != null && !ValidationHelper.IsValidTitle(dto.Title))
-                    return BadRequest(ApiResponse<TaskItemDto>.ErrorResponse("Title must be less than 255 characters"));
+                    return BadRequest(ApiResponse.ErrorResponse("Title must be less than 255 characters"));
 
                 if (dto.Description != null && !ValidationHelper.IsValidDescription(dto.Description))
-                    return BadRequest(ApiResponse<TaskItemDto>.ErrorResponse("Description must be less than 1000 characters"));
-
-                var todo = await _taskService.CompleteTaskAsync(id, dto);
+                    return BadRequest(ApiResponse.ErrorResponse("Description must be less than 1000 characters"));
+                var todo = await _taskService.UpdateAsync(id, dto);
                 if (todo == null)
-                    return NotFound(ApiResponse<TaskItemDto>.ErrorResponse("Todo not found"));
+                    return NotFound(ApiResponse.ErrorResponse("Todo not found"));
 
                 return Ok(ApiResponse<TaskItemDto>.SuccessResponse(todo, "Todo updated successfully"));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error updating todo");
-                return StatusCode(500, ApiResponse<TaskItemDto>.ErrorResponse("Internal server error"));
+                return StatusCode(500, ApiResponse.ErrorResponse("Internal server error"));
             }
         }
-
-        /// <summary>
-        /// Delete a todo
-        /// </summary>
         [HttpDelete("{id}")]
         public async Task<ActionResult<ApiResponse>> DeleteTodo(int id)
         {
@@ -137,5 +144,43 @@ namespace TodoApi.Controllers
                 return StatusCode(500, ApiResponse.ErrorResponse("Internal server error"));
             }
         }
+        [HttpGet("search")]
+        public async Task<ActionResult<ApiResponse<IEnumerable<TaskItemDto>>>> SearchTasks([FromBody] SearchTaskDto dto)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(dto.SearchTerm))
+                {
+                    return BadRequest(ApiResponse.ErrorResponse("Search term cannot be empty"));
+                }
+                var tasks = await _taskService.SearchAsync(dto.SearchTerm);
+                return Ok(ApiResponse<IEnumerable<TaskItemDto>>.SuccessResponse(tasks, "Search completed successfully"));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error searching tasks");
+                return StatusCode(500, ApiResponse.ErrorResponse("Internal server error"));
+            }
+        }
+        [HttpPost("get-paged")]
+        public async Task<ActionResult<ApiResponse<PagedTaskItemDto>>> GetPagedTasks([FromBody] PagedRequestDto dto)
+        {
+            try
+            {
+                if (dto.PageNumber <= 0 || dto.Limit <= 0)
+                {
+                    return BadRequest(ApiResponse.ErrorResponse("PageNumber and Limit must be greater than zero"));
+                }
+                var pagedTasks = await _taskService.GetPagedAsync(dto.PageNumber, dto.Limit);
+                return Ok(ApiResponse<PagedTaskItemDto>.SuccessResponse(pagedTasks, "Paged tasks retrieved successfully"));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting paged tasks");
+                return StatusCode(500, ApiResponse.ErrorResponse("Internal server error"));
+            }
+        }
     }
 }
+
+        

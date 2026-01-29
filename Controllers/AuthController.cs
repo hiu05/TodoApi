@@ -30,7 +30,7 @@ namespace TodoApi.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error during registration");
-                return StatusCode(500, ApiResponse<string>.ErrorResponse("Internal server error"));
+                return StatusCode(500, ApiResponse.ErrorResponse("Internal server error"));
             }
         }
         [HttpPost("login")]
@@ -45,12 +45,12 @@ namespace TodoApi.Controllers
             catch (UnauthorizedAccessException ex)
             {
                 _logger.LogWarning(ex, "Unauthorized login attempt for user: {Username}", dto.Username);
-                return Unauthorized(ApiResponse<LoginResponseDto>.ErrorResponse("Invalid username or password"));
+                return Unauthorized(ApiResponse.ErrorResponse("Invalid username or password"));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error during login");
-                return StatusCode(500, ApiResponse<LoginResponseDto>.ErrorResponse("Internal server error"));
+                return StatusCode(500, ApiResponse.ErrorResponse("Internal server error"));
             }
         }
     }

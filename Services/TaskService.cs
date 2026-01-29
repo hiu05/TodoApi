@@ -31,11 +31,6 @@ namespace TodoApi.Services
 
         public async Task<IEnumerable<TaskItemDto>> GetAllAsync()
         {
-            // var userIdClaim = _httpContextAccessor.HttpContext?.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-            // if (string.IsNullOrEmpty(userIdClaim))
-            //     throw new UnauthorizedAccessException("UserId not found in token");
-
-            // var userId = int.Parse(userIdClaim);
             _logger.LogInformation("Fetching tasks for UserId: {UserId}", _userId);
             var items = await _repository.GetAllAsync(_userId);
             return items.Select(MapToDto);
@@ -43,7 +38,7 @@ namespace TodoApi.Services
 
         public async Task<TaskItemDto?> GetByIdAsync(int id)
         {
-            var item = await _repository.GetByIdAsync(id);
+            var item = await _repository.GetByIdAsync(id, userId: _userId);
             return item == null ? null : MapToDto(item);
         }
 
@@ -62,11 +57,16 @@ namespace TodoApi.Services
             return MapToDto(item);
         }
 
-        public async Task<TaskItemDto?> CompleteTaskAsync(int id, CompleteTaskDto dto)
+        public async Task CompleteTaskAsync(int id)
         {
-            var item = await _repository.GetByIdAsync(id);
+            await _repository.CompleteTaskAsync(id, userId: _userId);
+        }
+
+        public async Task<TaskItemDto> UpdateAsync(int id, CreateTaskDto dto)
+        {
+            var item = await _repository.GetByIdAsync(id, userId: _userId);
             if (item == null)
-                return null;
+                throw new KeyNotFoundException("Task not found");
 
             if (!string.IsNullOrWhiteSpace(dto.Title))
                 item.Title = dto.Title.Trim();
@@ -74,23 +74,29 @@ namespace TodoApi.Services
             if (dto.Description != null)
                 item.Description = dto.Description.Trim();
 
-            if (dto.IsCompleted.HasValue)
-                item.IsCompleted = dto.IsCompleted.Value;
-
-            await _repository.CompleteTaskAsync(item);
+            await _repository.UpdateAsync(id, userId: _userId);
             return MapToDto(item);
         }
 
         public async Task<bool> DeleteAsync(int id)
         {
-            var item = await _repository.GetByIdAsync(id);
+            var item = await _repository.GetByIdAsync(id, userId: _userId);
             if (item == null)
                 return false;
 
-            await _repository.DeleteAsync(id);
+            await _repository.DeleteAsync(id, userId: _userId);
             return true;
         }
 
+        public async Task<IEnumerable<TaskItemDto>> SearchAsync(string searchTerm)
+        {
+            var items = await _repository.SearchAsync(searchTerm, userId: _userId);
+            return items.Select(MapToDto);
+        }
+        public async Task<PagedTaskItemDto> GetPagedAsync(int pageNumber, int limit)
+        {
+            return await _repository.GetPagedAsync(_userId, pageNumber, limit);
+        }
         private static TaskItemDto MapToDto(TaskItem item)
         {
             return new TaskItemDto
