@@ -1,3 +1,5 @@
+using TodoApi.DTOs;
+
 namespace TodoApi.Helpers
 {
     public static class ValidationHelper
