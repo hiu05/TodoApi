@@ -19,13 +19,13 @@ namespace TodoApi.Controllers
             _logger = logger;
         }
         [HttpPost("register")]
-        public async Task<ActionResult<ApiResponse<string>>> Register([FromBody] RegisterDto dto)
+        public async Task<ActionResult<ApiResponse>> Register([FromBody] RegisterDto dto)
         {
             try
             {
                 _logger.LogInformation("Registering user: {Username}", dto.Username);
                 await _authService.RegisterAsync(dto);
-                return Ok(ApiResponse<string>.SuccessResponse(null, "User registered successfully"));
+                return Ok(ApiResponse.SuccessResponse("User registered successfully"));
             }
             catch (Exception ex)
             {

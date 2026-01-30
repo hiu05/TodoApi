@@ -2,6 +2,7 @@ using TodoApi.DTOs;
 using TodoApi.Entities;
 using TodoApi.Repositories;
 using TodoApi.Helpers;
+using Microsoft.AspNetCore.Identity;
 
 namespace TodoApi.Services
 {
@@ -35,7 +36,7 @@ namespace TodoApi.Services
             var user = new User
             {
                 Username = dto.Username,
-                PasswordHash = HashPassword(dto.Password)
+                PasswordHash = dto.Password
             };
 
             var loggedInUser = await _authRepository.LoginAsync(user);
@@ -43,21 +44,32 @@ namespace TodoApi.Services
             {
                 throw new UnauthorizedAccessException("Invalid username or password.");
             }
-
+            if (!VerifyPassword(loggedInUser.PasswordHash, dto.Password))
+            {
+                throw new UnauthorizedAccessException("Invalid username or password.");
+            }
             // Generate JWT token
             var token = _jwtTokenHelper.GenerateToken(loggedInUser);
-            
+
             return new LoginResponseDto
             {
                 Token = token,
-                Expiration = DateTime.UtcNow.AddMinutes(60)
+                Expiration = DateTime.UtcNow.AddMinutes(36)
             };
         }
 
         private string HashPassword(string password)
         {
-            // Implement a proper password hashing mechanism here
-            return Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(password));
+            var hasher = new PasswordHasher<object>();
+            return hasher.HashPassword(new object(), password);
         }
+
+        private bool VerifyPassword(string hashedPassword, string password)
+        {
+            var hasher = new PasswordHasher<object>();
+            var result = hasher.VerifyHashedPassword(new object(), hashedPassword, password);
+            return result == PasswordVerificationResult.Success;
+        }
+
     }
 }
