@@ -30,7 +30,6 @@ namespace TodoApi.Helpers
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim(ClaimTypes.Name, user.Username),
                 new Claim(ClaimTypes.Role, user.Role),
-                new Claim("Status", user.Status)
             };
 
             var token = new JwtSecurityToken(

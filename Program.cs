@@ -7,6 +7,7 @@ using TodoApi.Data;
 using TodoApi.Helpers;
 using TodoApi.Repositories;
 using TodoApi.Services;
+using TodoApi.Config;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,29 +26,7 @@ builder.Services.AddDbContext<TodoDbContext>(options =>
 );
 
 // Add JWT Authentication
-var jwtSettings = builder.Configuration.GetSection("Jwt");
-var secretKey = jwtSettings["SecretKey"];
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddJwtBearer(options =>
-{
-    options.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey ?? throw new InvalidOperationException("JWT secret key is not configured"))),
-        ValidateIssuer = true,
-        ValidIssuer = jwtSettings["Issuer"],
-        ValidateAudience = true,
-        ValidAudience = jwtSettings["Audience"],
-        ValidateLifetime = true,
-        ClockSkew = TimeSpan.Zero,
-        NameClaimType = ClaimTypes.NameIdentifier,
-        RoleClaimType = ClaimTypes.Role
-    };
-});
+builder.Services.AddJwtAuthentication(builder.Configuration);
 
 // Add Dependency Injection
 builder.Services.AddScoped<ITaskRepository, TaskRepository>();
