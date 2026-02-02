@@ -91,6 +91,10 @@ namespace TodoApi.Services
             var items = await _repository.SearchAsync(searchTerm, userId: _userId);
             return items.Select(MapToDto);
         }
+        public async Task<PagedTaskItemDto> GetByTimeLineAsync(DateRangeDto dateRange)
+        {
+            return await _repository.GetByTimeLineAsync(dateRange, _userId);
+        }
         private static TaskItemDto MapToDto(TaskItem item)
         {
             return new TaskItemDto

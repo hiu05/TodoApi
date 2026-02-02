@@ -166,7 +166,20 @@ namespace TodoApi.Controllers
                 return StatusCode(500, ApiResponse.ErrorResponse("Internal server error"));
             }
         }
+        [HttpPost("timeline")]
+        public async Task<ActionResult<ApiResponse<PagedTaskItemDto>>> GetTasksByTimeLine([FromBody] DateRangeDto dto)
+        {
+            try
+            {   
+                _logger.LogInformation("Retrieving tasks by timeline from {StartDate} to {EndDate}", dto.StartDate, dto.EndDate);
+                var tasks = await _taskService.GetByTimeLineAsync(dto);
+                return Ok(ApiResponse<PagedTaskItemDto>.SuccessResponse(tasks, "Timeline tasks retrieved successfully"));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving tasks by timeline");
+                return StatusCode(500, ApiResponse.ErrorResponse("Internal server error"));
+            }
+        }
     }
 }
-
-        

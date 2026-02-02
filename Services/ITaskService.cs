@@ -11,6 +11,7 @@ namespace TodoApi.Services
         Task<TaskItemDto> UpdateAsync(int id, CreateTaskDto dto);
         Task CompleteTaskAsync(int id);
         Task<IEnumerable<TaskItemDto>> SearchAsync(string searchTerm);
+        Task<PagedTaskItemDto> GetByTimeLineAsync(DateRangeDto dateRange);
         Task<bool> DeleteAsync(int id);
     }
 }

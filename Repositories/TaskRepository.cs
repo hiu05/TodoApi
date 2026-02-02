@@ -100,6 +100,38 @@ namespace TodoApi.Repositories
                 .OrderByDescending(t => t.CreatedAt)
                 .ToListAsync();
         }
+        public async Task<PagedTaskItemDto> GetByTimeLineAsync(DateRangeDto dateRange, int userId)
+        {
+            var query = _context.Tasks
+                .Where(t => t.UserId == userId && t.CreatedAt >= dateRange.StartDate && t.CreatedAt <= dateRange.EndDate)
+                .OrderByDescending(t => t.CreatedAt);
+
+            var totalItems = await query.CountAsync();
+            var items = await query
+                .Skip((dateRange.PageNumber - 1) * dateRange.Limit)
+                .Take(dateRange.Limit)
+                .ToListAsync();
+
+            return new PagedTaskItemDto
+            {
+                Pagination = new PaginationDto
+                {
+                    TotalItems = totalItems,
+                    PageNumber = dateRange.PageNumber,
+                    Limit = dateRange.Limit,
+                    TotalPages = (int)Math.Ceiling((double)totalItems / dateRange.Limit)
+                },
+                Items = items.Select(item => new TaskItemDto
+                {
+                    Id = item.Id,
+                    Title = item.Title,
+                    Description = item.Description,
+                    IsCompleted = item.IsCompleted,
+                    CreatedAt = item.CreatedAt,
+                    CompletedAt = item.CompletedAt
+                })
+            };
+        }
 
         public async Task SaveAsync()
         {

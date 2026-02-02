@@ -1,8 +1,5 @@
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
-using System.Security.Claims;
 using TodoApi.Data;
 using TodoApi.Helpers;
 using TodoApi.Repositories;
@@ -53,8 +50,8 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
-
 }
+
 app.MapGet("/", () => "Todo API is running.");
 app.UseHttpsRedirection();
 app.UseCors("AllowAll");
